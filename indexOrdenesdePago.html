@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yoayu - Sistema de Gestión Cooperativa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'yoayu-green': '#006847', /* Verde Institucional Yoayu */
+                        'yoayu-dark': '#004d35',
+                        'yoayu-light': '#e6f0ed',
+                        'yoayu-header': '#f2f2f2',
+                        'yoayu-border': '#dce1e5',
+                        'success-green': '#059669', // Verde para botones de éxito
+                    },
+                    fontFamily: { sans: ['Segoe UI', 'Inter', 'system-ui', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', 'Inter', sans-serif; color: #1f2937; }
+        
+        /* Estilos tipo Oracle APEX Universal Theme */
+        .sidebar { background-color: #006847; background-image: linear-gradient(180deg, #006847 0%, #004d35 100%); }
+        .nav-item { border-radius: 4px; color: rgba(255,255,255,0.9); }
+        .nav-item:hover { background-color: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active-link { background-color: rgba(255,255,255,0.2); border-left: 4px solid #FFC300; font-weight: 600; }
+        
+        .card { background: white; border: 1px solid #dce1e5; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .card-header { background-color: transparent; border-bottom: 1px solid #dce1e5; padding: 12px 16px; font-weight: 600; color: #333; font-size: 1rem; }
+        
+        /* Inputs estilo APEX */
+        input, select, textarea { border: 1px solid #dfdfdf; border-radius: 2px; transition: border-color 0.2s, box-shadow 0.2s; font-size: 0.875rem; height: 2.5rem; padding: 0.25rem 0.5rem; width: 100%; }
+        input:focus, select:focus, textarea:focus { border-color: #006847; outline: none; box-shadow: 0 0 0 1px rgba(0, 104, 71, 0.2); }
+        input:disabled, select:disabled, textarea:disabled { background-color: #f9fafb; cursor: not-allowed; color: #6b7280; }
+        
+        label { color: #555; font-weight: 600; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; }
+        .required-asterisk { color: #dc2626; margin-left: 2px; }
+
+        .btn-apex-primary { background-color: #006847; color: white; border-radius: 2px; font-weight: 500; transition: background-color 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: inline-flex; align-items: center; justify-content: center; height: 2.5rem; padding: 0 1rem; }
+        .btn-apex-primary:hover:not(:disabled) { background-color: #005a3e; }
+        
+        .btn-apex-success { background-color: #10b981; color: white; border-radius: 2px; font-weight: 600; transition: background-color 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1); height: 2.5rem; padding: 0 1.5rem; }
+        .btn-apex-success:hover:not(:disabled) { background-color: #059669; }
+
+        .btn-apex-danger { background-color: #ef4444; color: white; border-radius: 2px; font-weight: 600; height: 2.5rem; padding: 0 1rem; }
+        .btn-apex-danger:hover { background-color: #dc2626; }
+
+        .view-content:not(.active) { display: none; }
+        .hidden-section { display: none; }
+
+        /* Breadcrumbs */
+        .breadcrumb { font-size: 0.75rem; color: #0066cc; margin-bottom: 0.5rem; }
+        .breadcrumb span { color: #666; }
+
+        /* Modal Backdrop */
+        .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); z-index: 50; }
+
+        /* Estilos específicos para botones de acción con estado */
+        .btn-step-action { font-size: 10px; padding: 2px 6px; border-radius: 3px; border: 1px solid #d1d5db; background: white; transition: all 0.2s; color: #4b5563; font-weight: bold; }
+        .btn-step-action:hover:not(:disabled) { background: #f3f4f6; border-color: #9ca3af; }
+        .btn-step-action.completed { background: #ecfdf5; border-color: #10b981; color: #059669; cursor: default; pointer-events: none; opacity: 0.9; }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 8px; height: 8px; background-color: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        html { scrollbar-width: thin; scrollbar-color: #c1c1c1 transparent; }
+    </style>
+</head>
+<body>
+
+<div class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar Estilo APEX -->
+    <div class="sidebar w-64 flex-shrink-0 flex flex-col justify-between hidden md:flex shadow-xl z-20">
+        <div class="p-4">
+            <div class="flex items-center justify-center mb-8 p-2 bg-white/10 rounded">
+                <img src="image_0c3875.png" alt="Yoayu Logo" class="h-12 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                <h1 class="text-2xl font-bold text-white hidden ml-2 tracking-wide" style="display:none">YOAYU</h1>
+            </div>
+
+            <nav class="space-y-1 text-sm overflow-y-auto max-h-[calc(100vh-200px)]">
+                <a href="#" class="nav-item flex items-center px-3 py-3 transition duration-150 active-link" data-view="dashboard" onclick="switchView('dashboard')">
+                    <svg class="w-5 h-5 mr-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    Panel Principal
+                </a>
+                
+                <div class="pt-4 pb-1 pl-3 text-xs uppercase text-green-200/60 font-bold tracking-wider">Operaciones de Caja</div>
+                <a href="#" class="nav-item flex items-center px-3 py-3 transition duration-150" data-view="apertura" onclick="switchView('apertura')">
+                    <svg class="w-5 h-5 mr-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    Apertura de Caja
+                </a>
+                <a href="#" class="nav-item flex items-center px-3 py-3 transition duration-150" data-view="caja" onclick="switchView('caja')">
+                    <svg class="w-5 h-5 mr-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    Movimientos (Caja)
+                </a>
+                
+                <div class="pt-4 pb-1 pl-3 text-xs uppercase text-green-200/60 font-bold tracking-wider">Gestión Operativa</div>
+                <a href="#" class="nav-item flex items-center px-3 py-3 transition duration-150" id="nav-ordenes-pago" data-view="ordenes-pago" onclick="switchView('ordenes-pago')">
+                    <svg class="w-5 h-5 mr-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Órdenes de Pago
+                </a>
+
+                <div class="pt-4 pb-1 pl-3 text-xs uppercase text-green-200/60 font-bold tracking-wider">Consultas</div>
+                <a href="#" class="nav-item flex items-center px-3 py-3 transition duration-150" data-view="reportes" onclick="switchView('reportes')">
+                    <svg class="w-5 h-5 mr-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    Reportes y Resumen
+                </a>
+            </nav>
+        </div>
+        <div class="p-4 bg-yoayu-dark/30 border-t border-yoayu-dark/50">
+            <div class="flex items-center">
+                <div class="w-2 h-2 rounded-full bg-green-400 mr-2 shadow-[0_0_5px_rgba(74,222,128,0.8)]" id="status-indicator-sidebar"></div>
+                <span id="status-text-sidebar" class="text-xs text-green-100 font-medium">Caja Abierta</span>
+            </div>
+            <div class="text-xs text-green-200/70 mt-1">Caja: 01 | Cajero: JPerez</div>
+        </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden bg-[#f2f2f2]">
+        <header class="bg-white shadow-sm h-14 flex items-center justify-between px-6 z-10 border-b border-gray-200">
+            <h2 id="page-title" class="text-lg font-bold text-gray-700 tracking-tight">Panel Principal</h2>
+            <div class="flex items-center space-x-4">
+                <div class="text-right hidden md:block leading-tight">
+                    <p class="text-xs font-bold text-gray-600 uppercase" id="header-date">--</p>
+                </div>
+                <div class="w-8 h-8 bg-yoayu-green text-white rounded-full flex items-center justify-center font-bold text-xs shadow-sm">JP</div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+            <!-- DASHBOARD -->
+            <section id="dashboard-view" class="view-content active">
+                <div class="card p-6 border-l-4 border-l-green-500 mb-6">
+                    <h3 class="text-base font-bold text-gray-700">Bienvenido, Juan Perez</h3>
+                    <p class="text-sm text-gray-500">Sistema Integral Yoayu</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div onclick="switchView('ordenes-pago')" class="card p-6 cursor-pointer hover:shadow-md transition-shadow border-t-4 border-t-yoayu-green flex flex-col items-center text-center justify-center h-40">
+                        <div class="bg-green-50 p-3 rounded-full mb-3 text-yoayu-green">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </div>
+                        <h4 class="font-bold text-sm text-gray-700">Órdenes de Pago</h4>
+                        <p class="text-xs text-gray-500 mt-1">Gestión de Proveedores y Pagos</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GESTIÓN ÓRDENES DE PAGO -->
+            <section id="ordenes-pago-view" class="view-content hidden-section">
+                <div class="mb-4 breadcrumb flex items-center text-gray-500 text-xs uppercase tracking-wide">
+                    <span>Inicio</span>
+                    <svg class="w-3 h-3 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    <span>Gestión Operativa</span>
+                    <svg class="w-3 h-3 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    <span class="text-yoayu-green font-bold">Órdenes de Pago</span>
+                </div>
+
+                <div class="card overflow-hidden shadow-lg border-0 rounded-lg">
+                    <div class="bg-white p-6 border-b flex flex-col md:flex-row justify-between items-center gap-4">
+                        <h3 class="text-xl font-bold text-gray-700 flex items-center">
+                            <span class="w-2 h-8 bg-yoayu-green rounded-full mr-3"></span>
+                            Gestión de Órdenes de Pago
+                        </h3>
+                        <div class="flex gap-3">
+                            <button onclick="printDailyReport()" class="btn-apex-primary bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 flex items-center shadow-sm">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                Imprimir Reporte Diario
+                            </button>
+                            <button onclick="showOrdenPagoForm()" class="btn-apex-success bg-[#00aa00] hover:bg-[#008800] shadow-md hover:shadow-lg transform transition hover:-translate-y-0.5 px-6 py-2.5 rounded-full flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                Ingresar Orden de Pago
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-gray-50 border-b">
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                            <div class="md:col-span-2">
+                                <label class="text-xs uppercase font-bold text-gray-400 mb-2">Buscar Proveedor / N° Orden</label>
+                                <div class="relative">
+                                    <input type="text" id="op-search" class="w-full pl-10 h-10 border-gray-300 rounded focus:ring-2 focus:ring-yoayu-green" placeholder="Ej: Office ...">
+                                    <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs uppercase font-bold text-gray-400 mb-2">Estado</label>
+                                <select id="op-filter-status" class="w-full h-10 border-gray-300 rounded text-sm">
+                                    <option value="">Todos</option>
+                                    <option value="Pendiente">Pendiente</option>
+                                    <option value="Registrada">Registrada</option>
+                                    <option value="Autorizada">Autorizada</option>
+                                    <option value="Impresa">Impresa</option>
+                                    <option value="Anulada">Anulada</option>
+                                </select>
+                            </div>
+                             <div>
+                                <label class="text-xs uppercase font-bold text-gray-400 mb-2">Fecha</label>
+                                <input type="date" id="op-filter-date" class="w-full h-10 border-gray-300 rounded text-sm">
+                            </div>
+                            <div>
+                                <button onclick="renderPaymentOrders()" class="h-10 px-6 bg-yoayu-dark text-white rounded hover:bg-yoayu-green font-medium transition-colors w-full shadow-sm">Filtrar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-white border-b border-gray-100">
+                                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Fecha</th>
+                                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">N° Orden</th>
+                                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Tipo</th>
+                                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Beneficiario / Concepto</th>
+                                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Medio Pago</th>
+                                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Monto Total</th>
+                                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-center">Estado</th>
+                                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Usuario</th>
+                                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="op-table-body" class="divide-y divide-gray-50 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FORMULARIO ORDEN DE PAGO -->
+            <section id="ordenes-pago-form-view" class="view-content hidden-section">
+                <input type="hidden" id="op-edit-id">
+                
+                <div class="mb-4 breadcrumb flex items-center text-gray-500 text-xs uppercase tracking-wide">
+                    <span>Inicio</span>...<span>Órdenes de Pago</span>...<span class="text-yoayu-green font-bold" id="form-op-breadcrumb">Nueva Orden</span>
+                </div>
+
+                <div id="read-only-banner" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded flex items-center text-xs">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"></path></svg>
+                    <strong>Modo Visualización:</strong> Los datos de esta orden están protegidos y no pueden ser editados.
+                </div>
+
+                <div class="card p-4 mb-6 bg-white border-l-4 border-l-yoayu-green shadow-sm flex items-center gap-4">
+                    <div class="w-full max-w-xs">
+                        <label class="text-xs font-bold text-gray-600 mb-1">TIPO DE ORDEN DE PAGO</label>
+                        <select id="op-type-select" class="w-full font-bold bg-white focus:ring-2 focus:ring-yoayu-green" onchange="toggleOrderTypeFlow()">
+                            <option value="Proveedor">Proveedor (General)</option>
+                            <option value="Matriz">Reposición de Caja - Casa Matriz</option>
+                            <option value="Interior">Reposición de Caja - Interior</option>
+                        </select>
+                    </div>
+                    <div class="text-xs text-gray-500 italic flex-1 border-l pl-4">
+                        * El flujo de trabajo y estados cambiarán según el tipo seleccionado.
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 space-y-6">
+                        <div id="section-provider-flow" class="card p-6 border-t-4 border-t-yoayu-green">
+                            <h4 class="text-sm font-bold text-gray-700 mb-4 border-b pb-2 flex justify-between items-center">
+                                <span>1. Datos del Proveedor</span>
+                                <button type="button" id="btn-open-prov-modal" onclick="openProviderModal()" class="text-xs text-yoayu-green hover:underline flex items-center cursor-pointer bg-green-50 px-2 py-1 rounded border border-green-200 hover:bg-green-100"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Registrar / Ver Proveedores</button>
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label>RUC / Documento <span class="required-asterisk">*</span></label>
+                                    <div class="flex">
+                                        <input type="text" id="prov-ruc-search" class="w-full rounded-r-none" placeholder="Ej: 80012345-1">
+                                        <button type="button" id="btn-do-search" onclick="searchProvider()" class="bg-yoayu-green text-white px-4 rounded-r hover:bg-yoayu-dark"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label>Razón Social</label>
+                                    <input type="text" id="prov-name" class="bg-gray-100" readonly>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <div id="timbrado-status" class="hidden text-xs px-3 py-2 rounded border flex items-center"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="section-reposicion-flow" class="card p-6 border-t-4 border-t-blue-500 hidden">
+                            <h4 class="text-sm font-bold text-gray-700 mb-4 border-b pb-2">1. Datos de Solicitud de Reposición</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label>Monto a Reponer (Gs) <span class="required-asterisk">*</span></label>
+                                    <input type="number" id="repo-monto" class="w-full font-bold text-blue-800" placeholder="0" oninput="calcTotals()">
+                                </div>
+                                <div>
+                                    <label>Destino (Sucursal) <span class="required-asterisk">*</span></label>
+                                    <select id="repo-destino" class="w-full"></select>
+                                </div>
+                                <div>
+                                    <label>Nro de Caja <span class="required-asterisk">*</span></label>
+                                    <input type="number" id="repo-caja-nro" class="w-full" placeholder="Ej: 01">
+                                </div>
+                                <div>
+                                    <label>Responsable que recibe <span class="required-asterisk">*</span></label>
+                                    <input type="text" id="repo-responsable" class="w-full" placeholder="Nombre y Apellido">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label>Motivo <span class="required-asterisk">*</span></label>
+                                    <textarea id="repo-motivo" class="w-full h-20 text-xs" placeholder="Detalle de la necesidad de fondos..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card p-6">
+                            <h4 class="text-sm font-bold text-gray-700 mb-4 border-b pb-2">2. Comprobante y Medio de Pago</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="mb-2">¿Cuenta con Documento de Respaldo?</label>
+                                        <div class="flex gap-4">
+                                            <label class="inline-flex items-center"><input type="radio" name="has_invoice" value="Si" checked class="text-yoayu-green focus:ring-yoayu-green" onchange="toggleInvoiceFields(true)"> <span class="ml-2 text-sm">Sí</span></label>
+                                            <label class="inline-flex items-center"><input type="radio" name="has_invoice" value="No" class="text-gray-400 focus:ring-gray-400" onchange="toggleInvoiceFields(false)"> <span class="ml-2 text-sm">No / Solicitud Interna</span></label>
+                                        </div>
+                                    </div>
+                                    <div id="invoice-fields">
+                                        <label>N° Factura / Documento <span class="required-asterisk">*</span></label>
+                                        <input type="text" id="op-factura-nro" class="w-full" placeholder="001-001-0000000">
+                                        <div class="mt-4 border-t pt-2" id="upload-section">
+                                            <label class="mb-1 block text-gray-700 text-xs font-bold">Adjuntar Imagen / Comprobante</label>
+                                            <div class="flex items-center justify-center w-full">
+                                                <label for="op-invoice-file" class="flex flex-col items-center justify-center w-full h-28 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors relative">
+                                                    <div class="flex flex-col items-center justify-center pt-2 pb-3" id="upload-placeholder">
+                                                        <svg class="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                        <p class="text-[10px] text-gray-500 text-center"><span class="font-semibold text-yoayu-green">Click para subir</span></p>
+                                                    </div>
+                                                    <div id="upload-preview" class="hidden absolute inset-0 w-full h-full bg-white rounded-lg flex items-center justify-center p-2">
+                                                        <div id="preview-content" class="flex flex-col items-center"></div>
+                                                        <button type="button" id="btn-remove-file" onclick="removeInvoiceFile(event)" class="absolute top-1 right-1 bg-white rounded-full p-1 shadow-md text-red-500 hover:text-red-700 z-10 border border-gray-200"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                                                    </div>
+                                                    <input id="op-invoice-file" type="file" class="hidden" accept="image/*,application/pdf" onchange="handleFileSelect(this)" />
+                                                </label>
+                                            </div> 
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-4 bg-gray-50 p-3 rounded border">
+                                    <div>
+                                        <label>Medio de Pago Propuesto <span class="required-asterisk">*</span></label>
+                                        <select id="op-medio-pago" class="w-full" onchange="togglePaymentFields()">
+                                            <option value="Efectivo">Efectivo</option>
+                                            <option value="Cheque">Cheque</option>
+                                            <option value="Transferencia">Transferencia Bancaria</option>
+                                        </select>
+                                    </div>
+                                    <div id="check-fields" class="hidden space-y-3">
+                                        <p class="text-[10px] text-gray-500 border-b pb-1">Pre-asignación de Cheque</p>
+                                        <div><label>Banco / Cuenta</label><select class="w-full text-xs"><option>Itaú - Cta Cte 123456</option></select></div>
+                                    </div>
+                                    <div id="transfer-fields" class="hidden space-y-3">
+                                        <p class="text-[10px] text-gray-500 border-b pb-1">Datos de Transferencia</p>
+                                        <div><label>Cuenta Origen <span class="required-asterisk">*</span></label><select id="op-transfer-origin" class="w-full text-xs"><option value="5005">CONTI. 5005</option></select></div>
+                                        <div><label>Nro Cuenta Destino</label><input type="text" id="op-transfer-dest" class="w-full" placeholder="123456789"></div>
+                                        <div><label>Fecha Transferencia</label><input type="date" id="op-transfer-date" class="w-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bloque 4. Autorización Eliminado -->
+
+                        <div id="section-post-approval" class="card p-6 border-t-4 border-t-green-600 bg-green-50/20 hidden">
+                            <h4 class="text-sm font-bold text-green-800 mb-4 border-b border-green-200 pb-2 flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"></path></svg>
+                                4. Datos de Ejecución de Pago (Post-Aprobación)
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label>Forma Ejecutada</label><select id="post-payment-type" class="w-full bg-white" onchange="togglePostPaymentFields()"><option value="Cheque">Cheque</option><option value="Transferencia">Transferencia</option></select></div>
+                                <div><label>Cuenta Origen</label><select id="post-account-origin" class="w-full bg-white"><option>Itaú - 123456</option></select></div>
+                                <div id="post-cheque-fields" class="md:col-span-2 grid grid-cols-2 gap-4">
+                                    <div><label>N° Cheque</label><input type="text" id="post-cheque-num" class="w-full"></div>
+                                    <div><label>Fecha Emisión</label><input type="date" id="post-cheque-date" class="w-full"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="card p-6 sticky top-4">
+                            <h4 class="text-sm font-bold text-gray-700 mb-4 border-b pb-2">3. Datos Contables</h4>
+                            <div class="space-y-4">
+                                <div><label>Rubro Contable</label><select id="op-rubro" class="w-full text-xs"><option value="2.1.01">2.1.01 - Proveedores</option><option value="1.1.01">1.1.01 - Recaudaciones</option></select></div>
+                                <div id="section-accounting-tax" class="bg-gray-50 p-3 rounded space-y-3 border">
+                                    <div class="grid grid-cols-3 items-center"><label class="col-span-1 text-gray-500">10%</label><input type="number" id="op-grav-10" class="col-span-2 text-right h-8 text-sm" oninput="calcTotals()"></div>
+                                    <div class="grid grid-cols-3 items-center"><label class="col-span-1 text-gray-500">Exenta</label><input type="number" id="op-exenta" class="col-span-2 text-right h-8 text-sm" oninput="calcTotals()"></div>
+                                </div>
+                                <div class="pt-4 border-t flex justify-between items-end">
+                                    <span class="text-sm font-bold text-gray-600">TOTAL</span>
+                                    <span class="text-2xl font-bold text-yoayu-green" id="op-total-display">0 Gs</span>
+                                </div>
+                                <div class="pt-6 flex flex-col gap-3">
+                                    <button type="button" onclick="confirmOrder()" id="btn-confirm-order" class="btn-apex-primary w-full h-12 text-base shadow-lg">Confirmar Orden</button>
+                                    <button type="button" onclick="cancelOrder()" id="btn-close-form" class="text-gray-500 text-sm hover:underline text-center">Cerrar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+             <!-- Vistas Existentes Simbolizadas -->
+            <section id="apertura-view" class="view-content hidden-section"><div class="card p-10 text-center"><h3 class="text-gray-400">Módulo de Apertura (Existente)</h3></div></section>
+            <section id="caja-view" class="view-content hidden-section"><div class="card p-10 text-center"><h3 class="text-gray-400">Módulo de Caja (Existente)</h3></div></section>
+            <section id="reportes-view" class="view-content hidden-section"><div class="card p-10 text-center"><h3 class="text-gray-400">Módulo de Reportes (Existente)</h3></div></section>
+        </main>
+    </div>
+</div>
+
+<!-- MODAL DE ACCIÓN CON OBSERVACIÓN Y USUARIO -->
+<div id="modal-step-flow" class="fixed inset-0 hidden overflow-y-auto h-full w-full modal-backdrop flex items-center justify-center z-50">
+    <div class="relative p-0 border w-full max-w-md shadow-2xl rounded-lg bg-white overflow-hidden">
+        <div class="bg-yoayu-green text-white px-6 py-4 flex justify-between items-center">
+            <h3 class="font-bold text-lg" id="modal-step-title">Procesar Acción</h3>
+            <button onclick="closeStepModal()" class="text-white text-2xl">&times;</button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div class="flex items-center p-3 bg-yoayu-light border border-yoayu-border rounded">
+                <div class="w-10 h-10 bg-yoayu-green text-white rounded-full flex items-center justify-center font-bold mr-3">JP</div>
+                <div>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase">Usuario Logueado</p>
+                    <p class="text-sm font-bold text-gray-800">Juan Pérez (JPerez)</p>
+                </div>
+            </div>
+            
+            <div>
+                <label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Observación (Opcional)</label>
+                <textarea id="step-observation" class="w-full h-24 p-2 text-sm border rounded focus:ring-1 focus:ring-yoayu-green resize-none" placeholder="Escriba un comentario si es necesario..."></textarea>
+            </div>
+            
+            <p class="text-[10px] text-gray-400 italic">Al confirmar, la acción se registrará permanentemente bajo su perfil.</p>
+        </div>
+        <div class="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
+            <button onclick="closeStepModal()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-200 rounded">Cancelar</button>
+            <button onclick="confirmActionStep()" class="btn-apex-primary px-6 h-9 text-sm">Confirmar Acción</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE IMPRESIÓN -->
+<div id="modal-print" class="fixed inset-0 hidden overflow-y-auto h-full w-full modal-backdrop flex items-center justify-center z-50">
+    <div class="relative p-0 border w-full max-w-4xl shadow-2xl rounded-lg bg-white h-[85vh] flex flex-col">
+        <div class="bg-gray-800 text-white px-4 py-3 rounded-t-lg flex justify-between items-center"><h3 class="font-bold">Vista Previa</h3><button onclick="document.getElementById('modal-print').classList.add('hidden')" class="text-gray-400 hover:text-white">&times;</button></div>
+        <div class="flex-1 bg-gray-500 p-8 overflow-y-auto flex justify-center"><div id="print-content-single" class="bg-white w-full max-w-[210mm] min-h-[297mm] p-8 shadow-lg text-sm text-black relative">Contenido de Orden...</div></div>
+    </div>
+</div>
+
+<script>
+    const MOCK_PROVIDERS = [{ ruc: '80012345-1', name: 'OFFICE SUPPLIES S.A.', timbrado: '12345678', acumuladoMes: 4500000 }];
+    
+    // Extensión de Mock Orders con seguimiento de pasos
+    let MOCK_ORDERS = [
+        { 
+            id: 'OP-001', date: '2025-01-20', provider: 'ANDE', type: 'Proveedor', method: 'Efectivo', amount: 450000, status: 'Pendiente', user: 'JPerez',
+            validatedSteps: [] 
+        },
+        { 
+            id: 'OP-002', date: '2025-01-21', provider: 'CASA MATRIZ', cajaNro: '02', type: 'Matriz', method: 'Transferencia', amount: 2000000, status: 'Pendiente', user: 'JPerez',
+            validatedSteps: ['Verificar'] 
+        }
+    ];
+
+    let currentProvider = null;
+    let pendingActionData = { type: null, orderId: null };
+
+    function switchView(viewId) {
+        document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+        if (viewId === 'ordenes-pago') {
+            document.getElementById('ordenes-pago-view').classList.remove('hidden-section');
+            document.getElementById('ordenes-pago-view').classList.add('active');
+            renderPaymentOrders();
+        } else {
+            const target = document.getElementById(viewId + '-view');
+            if(target) target.classList.add('active');
+        }
+        document.getElementById('page-title').textContent = viewId === 'dashboard' ? 'Panel Principal' : 'Gestión de Pagos';
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active-link'));
+        const navItem = document.querySelector(`.nav-item[data-view="${viewId}"]`);
+        if (navItem) navItem.classList.add('active-link');
+    }
+
+    function renderPaymentOrders() {
+        const tbody = document.getElementById('op-table-body');
+        tbody.innerHTML = '';
+        MOCK_ORDERS.forEach(op => {
+            const statusClass = { 
+                'Pendiente': 'bg-orange-100 text-orange-800', 
+                'Registrada': 'bg-gray-100', 
+                'Autorizada': 'bg-blue-100 text-blue-800', 
+                'Impresa': 'bg-green-100 text-green-800', 
+                'Anulada': 'bg-red-100' 
+            }[op.status] || 'bg-gray-100';
+            
+            const typeLabel = op.type === 'Proveedor' ? 'Proveedor' : (op.type === 'Matriz' ? 'Repo. Matriz' : 'Repo. Interior');
+            const typeClass = op.type === 'Proveedor' ? 'text-yoayu-green bg-green-50 border-green-200' : 'text-blue-700 bg-blue-50 border-blue-200';
+
+            tbody.insertAdjacentHTML('beforeend', `
+                <tr class="hover:bg-gray-50 border-b transition-colors text-xs">
+                    <td class="p-4 text-gray-500">${op.date}</td>
+                    <td class="p-4 font-bold text-gray-700">${op.id}</td>
+                    <td class="p-4"><span class="px-2 py-0.5 rounded border text-[10px] font-bold uppercase ${typeClass}">${typeLabel}</span></td>
+                    <td class="p-4">
+                        <div class="font-bold text-gray-800">${op.provider}</div>
+                        ${op.cajaNro ? `<div class="text-[10px] text-blue-600 font-bold">Caja N° ${op.cajaNro}</div>` : ''}
+                    </td>
+                    <td class="p-4 text-gray-600">${op.method}</td>
+                    <td class="p-4 text-right font-bold text-gray-800">${op.amount.toLocaleString('es-PY')}</td>
+                    <td class="p-4 text-center"><span class="px-2 py-1 rounded text-xs font-bold ${statusClass}">${op.status}</span></td>
+                    <td class="p-4 text-xs text-gray-500">${op.user}</td>
+                    <td class="p-4 text-center">
+                        <div class="flex items-center justify-center gap-1">
+                            ${renderActionButton('Verificar', op)}
+                            ${renderActionButton('Aprobar', op)}
+                            ${renderActionButton('Autorizar', op)}
+                            ${renderActionButton('Controlar', op)}
+                            <div class="w-px h-4 bg-gray-200 mx-1"></div>
+                            <button onclick="editOrder('${op.id}', true)" class="text-blue-600 p-1.5 hover:bg-blue-50 rounded" title="Ver Detalle">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path></svg>
+                            </button>
+                            <button onclick="editOrder('${op.id}', false)" class="text-yoayu-green p-1.5 hover:bg-yoayu-light rounded" title="Editar">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2"></path></svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    // Helper para renderizar botones de acción con estado
+    function renderActionButton(type, op) {
+        const isDone = op.validatedSteps && op.validatedSteps.includes(type);
+        const className = isDone ? 'btn-step-action completed' : 'btn-step-action';
+        const label = type === 'Verificar' ? 'Verif.' : (type === 'Aprobar' ? 'Aprob.' : (type === 'Autorizar' ? 'Auto.' : 'Contr.'));
+        
+        return `<button onclick="actionFlow('${type}', '${op.id}')" class="${className}" title="${type}" ${isDone ? 'disabled' : ''}>${label}</button>`;
+    }
+
+    // Modal Flow Logic
+    function actionFlow(type, id) {
+        pendingActionData = { type, orderId: id };
+        document.getElementById('modal-step-title').textContent = `Procesar Acción: ${type}`;
+        document.getElementById('step-observation').value = '';
+        document.getElementById('modal-step-flow').classList.remove('hidden');
+    }
+
+    function closeStepModal() {
+        document.getElementById('modal-step-flow').classList.add('hidden');
+    }
+
+    function confirmActionStep() {
+        const { type, orderId } = pendingActionData;
+        const op = MOCK_ORDERS.find(o => o.id === orderId);
+        
+        if (op) {
+            if (!op.validatedSteps) op.validatedSteps = [];
+            op.validatedSteps.push(type);
+            if (type === 'Autorizar') {
+                op.status = 'Autorizada';
+            }
+        }
+
+        closeStepModal();
+        renderPaymentOrders();
+    }
+
+    function toggleOrderTypeFlow() {
+        const type = document.getElementById('op-type-select').value;
+        const sectionProv = document.getElementById('section-provider-flow');
+        const sectionRepo = document.getElementById('section-reposicion-flow');
+        const sectionTax = document.getElementById('section-accounting-tax');
+        const repoDestinoSelect = document.getElementById('repo-destino');
+
+        if (type === 'Proveedor') {
+            sectionProv.classList.remove('hidden');
+            sectionRepo.classList.add('hidden');
+            sectionTax.classList.remove('hidden');
+        } else {
+            sectionProv.classList.add('hidden');
+            sectionRepo.classList.remove('hidden');
+            sectionTax.classList.add('hidden');
+            repoDestinoSelect.innerHTML = '<option value="">-- Sucursal --</option>';
+            let options = type === 'Matriz' ? ['CASA MATRIZ', 'AG. PETTIROSI', 'SUC. LAMBARE'] : ['CDE', 'ENCARNACION', 'SAN PEDRO'];
+            options.forEach(opt => {
+                const el = document.createElement('option');
+                el.value = opt; el.textContent = opt; repoDestinoSelect.appendChild(el);
+            });
+        }
+        calcTotals();
+    }
+
+    function resetForm() {
+        document.getElementById('op-edit-id').value = "";
+        document.getElementById('form-op-breadcrumb').textContent = "Nueva Orden";
+        document.getElementById('prov-ruc-search').value = "";
+        document.getElementById('prov-name').value = "";
+        document.getElementById('repo-monto').value = "";
+        document.getElementById('repo-caja-nro').value = "";
+        document.getElementById('repo-responsable').value = "";
+        document.getElementById('repo-motivo').value = "";
+        document.getElementById('op-factura-nro').value = "";
+        document.getElementById('op-grav-10').value = "";
+        document.getElementById('op-exenta').value = "";
+        document.getElementById('op-type-select').value = "Proveedor";
+        document.getElementById('op-medio-pago').value = "Efectivo";
+        
+        // Habilitar todo por defecto
+        const form = document.getElementById('ordenes-pago-form-view');
+        const inputs = form.querySelectorAll('input, select, textarea, button');
+        inputs.forEach(el => el.disabled = false);
+        
+        document.getElementById('read-only-banner').classList.add('hidden');
+        document.getElementById('btn-confirm-order').style.display = 'block';
+        
+        toggleOrderTypeFlow();
+        togglePaymentFields();
+    }
+
+    function confirmOrder() {
+        const type = document.getElementById('op-type-select').value;
+        const amount = parseInt(document.getElementById('op-total-display').textContent.replace(/\D/g,''));
+        const editId = document.getElementById('op-edit-id').value;
+
+        if (editId) {
+            const idx = MOCK_ORDERS.findIndex(o => o.id === editId);
+            if (idx !== -1) {
+                MOCK_ORDERS[idx].amount = amount;
+                MOCK_ORDERS[idx].type = type;
+            }
+        } else {
+            const data = {
+                id: 'OP-' + (MOCK_ORDERS.length + 1).toString().padStart(3, '0'),
+                date: new Date().toISOString().split('T')[0],
+                type: type,
+                provider: type === 'Proveedor' ? (document.getElementById('prov-name').value || 'S/N') : document.getElementById('repo-destino').value,
+                cajaNro: type !== 'Proveedor' ? document.getElementById('repo-caja-nro').value : '',
+                amount: amount,
+                method: document.getElementById('op-medio-pago').value,
+                status: 'Pendiente',
+                user: 'JPerez',
+                validatedSteps: []
+            };
+            MOCK_ORDERS.unshift(data);
+        }
+        switchView('ordenes-pago');
+    }
+
+    function showOrdenPagoForm() { 
+        resetForm();
+        document.getElementById('ordenes-pago-view').classList.add('hidden-section');
+        document.getElementById('ordenes-pago-view').classList.remove('active');
+        document.getElementById('ordenes-pago-form-view').classList.remove('hidden-section');
+        document.getElementById('ordenes-pago-form-view').classList.add('active');
+    }
+
+    function editOrder(id, isReadOnly = false) { 
+        const op = MOCK_ORDERS.find(o => o.id === id);
+        if(!op) return;
+
+        resetForm();
+        
+        document.getElementById('op-edit-id').value = op.id;
+        document.getElementById('form-op-breadcrumb').textContent = (isReadOnly ? "Visualizando" : "Editando") + " Orden " + op.id;
+        
+        document.getElementById('op-type-select').value = op.type;
+        toggleOrderTypeFlow();
+        
+        if (op.type === 'Proveedor') {
+            document.getElementById('prov-name').value = op.provider;
+        } else {
+            document.getElementById('repo-destino').value = op.provider;
+            document.getElementById('repo-caja-nro').value = op.cajaNro;
+            document.getElementById('repo-monto').value = op.amount;
+        }
+        
+        document.getElementById('op-medio-pago').value = op.method;
+        togglePaymentFields();
+
+        if (isReadOnly) {
+            const form = document.getElementById('ordenes-pago-form-view');
+            const inputs = form.querySelectorAll('input, select, textarea, button:not(#btn-close-form)');
+            inputs.forEach(el => el.disabled = true);
+            document.getElementById('read-only-banner').classList.remove('hidden');
+            document.getElementById('btn-confirm-order').style.display = 'none';
+        }
+
+        document.getElementById('ordenes-pago-view').classList.add('hidden-section');
+        document.getElementById('ordenes-pago-view').classList.remove('active');
+        document.getElementById('ordenes-pago-form-view').classList.remove('hidden-section');
+        document.getElementById('ordenes-pago-form-view').classList.add('active');
+        calcTotals();
+    }
+
+    function cancelOrder() { switchView('ordenes-pago'); }
+    
+    function calcTotals() {
+        const g10 = parseInt(document.getElementById('op-grav-10').value) || 0;
+        const ex = parseInt(document.getElementById('op-exenta').value) || 0;
+        const total = document.getElementById('op-type-select').value === 'Proveedor' ? (g10 + ex) : (parseInt(document.getElementById('repo-monto').value) || 0);
+        document.getElementById('op-total-display').textContent = total.toLocaleString('es-PY') + " Gs";
+    }
+
+    function togglePaymentFields() {
+        const method = document.getElementById('op-medio-pago').value;
+        document.getElementById('check-fields').className = method === 'Cheque' ? 'space-y-3' : 'hidden';
+        document.getElementById('transfer-fields').className = method === 'Transferencia' ? 'space-y-3' : 'hidden';
+    }
+
+    function searchProvider() { const r = MOCK_PROVIDERS[0]; document.getElementById('prov-name').value = r.name; calcTotals(); }
+    function toggleInvoiceFields(v) { document.getElementById('invoice-fields').className = v ? '' : 'opacity-50 pointer-events-none'; }
+
+    function printDailyReport(){ document.getElementById('modal-print').classList.remove('hidden'); }
+    function openProviderModal(){ alert('Catálogo de proveedores no disponible en esta demo.'); }
+    function handleFileSelect(){ /* demo */ }
+    function removeInvoiceFile(e){ e.preventDefault(); e.stopPropagation(); }
+    function togglePostApprovalVisibility(){ /* demo */ }
+    function togglePostPaymentFields(){ /* demo */ }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('header-date').textContent = new Date().toLocaleDateString('es-PY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        renderPaymentOrders();
+    });
+</script>
+</body>
+</html>
